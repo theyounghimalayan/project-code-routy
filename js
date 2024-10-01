@@ -665,6 +665,24 @@ async function fetchData() {
           category: category,
           routySupport:
             item?.routySupport != undefined ? item?.routySupport : true,
+          cms: {
+            ...item.cms,
+            tags: ["closed", "open", "dasasd", "easdd asdasd", "asdasd asd"],
+            game_types: [
+              "casino",
+              "ajsvcjah",
+              "cakjds asnd",
+              "akjsdn ajsnd",
+              "ahjsdv ahbsd",
+            ],
+            languages: [
+              { name: "english" },
+              { name: "askdb" },
+              { name: "casdkna asdnj" },
+              { name: "asdasd asdasd" },
+              { name: "easdasd asdasd" },
+            ],
+          },
         };
       }
     );
@@ -686,7 +704,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   filteredPrograms = [...programs];
   if (window.location.href.includes("elementor-19985")) {
     renderDetailsPageInfo();
-    tabEvent();
+    // tabEvent(); for the clicking property of the tabs
   } else {
     renderList();
     renderPagination();
@@ -775,6 +793,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         searchInputMobileDiv.classList.add("active");
       }
     });
+    sortPrograms("oldest first");
   }
 });
 
@@ -837,7 +856,7 @@ function renderList() {
                         .map((category) => `${category}`)
                         .splice(0, 3)
                         .join(", ") + ",..."
-                    : program.category
+                    : program.category.length
                     ? program.category
                         .map((category) => `${category}`)
                         .splice(0, 3)
@@ -1115,7 +1134,9 @@ function renderDetailsBannerandtab(obj) {
   const tabsDataApprovalRate = document.getElementById(
     "affiliate-programs-list-details-tabs-data-approval-rate"
   );
-  bannerLogoImage.src = obj.logo || "";
+  bannerLogoImage.src =
+    obj.logo ||
+    "http://127.0.0.1/routy-local/wp-content/uploads/2024/09/no-image-svg.svg";
   bannerHeadingDiv.innerHTML = obj.name || "";
   bannerYearFoundedDiv.innerHTML = obj.cms?.launched_at || "";
   bannerRevenueShareDiv.innerHTML = obj.cms?.commission || "";
@@ -1123,7 +1144,10 @@ function renderDetailsBannerandtab(obj) {
   joinButton.forEach(
     (joinBtn) => (joinBtn.href = obj.cms?.sub_affiliat_link || "")
   );
-  routyConnectButton.forEach((connectbtn) => (connectbtn.href = "#"));
+  routyConnectButton.forEach(
+    (connectbtn) =>
+      (connectbtn.href = "http://127.0.0.1/routy-local/contact-us/")
+  );
   tabsDataName.innerHTML = obj.name || "";
   tabsDataBrand.innerHTML =
     obj.brands.length > 3
@@ -1131,7 +1155,7 @@ function renderDetailsBannerandtab(obj) {
           .map((brand) => `${brand} `)
           .splice(0, 3)
           .join(", ") + ",..."
-      : obj.brands
+      : obj.brands.length
       ? obj.brands
           .map((brand) => `${brand}`)
           .splice(0, 3)
@@ -1142,30 +1166,71 @@ function renderDetailsBannerandtab(obj) {
     "href",
     `mailto:${obj.cms?.contact_email ? obj.cms?.contact_email : ""}`
   );
-  tabsDataTags.innerHTML =
-    obj.cms?.tags.length > 3
-      ? obj.cms?.tags
-          .map((tag) => `${tag} `)
-          .splice(0, 3)
-          .join(", ") + ",..."
-      : obj.cms.tags
-      ? obj.cms.tags
-          .map((tag) => `${tag}`)
-          .splice(0, 3)
-          .join(", ")
-      : "";
+  console.log(obj.cms.tags);
+  console.log(
+    obj.cms.tags
+      .map((item) => item)
+      .join(",")
+      .replaceAll(",", "")
+  );
+  tabsDataTags.innerHTML = obj.cms?.tags.length
+    ? obj.cms?.tags
+        ?.map(
+          (tag) =>
+            `<div class="affiliate-programs-list-details-tabs-data-game">${tag}</div>`
+        )
+        .join(",")
+        .replaceAll(",", "")
+    : "";
+  // obj.cms?.tags.length > 3
+  //   ? obj.cms?.tags
+  //       .map((tag) => `<div class="affiliate-programs-list-details-tabs-data-tag">${tag}</div>`)
+  //       .splice(0, 3)
+  //       .join(", ") + ",..."
+  //   : obj.cms.tags.length
+  //   ? obj.cms.tags
+  //       .map((tag) => `<div class="affiliate-programs-list-details-tabs-data-tag">${tag}</div>`)
+  //       .splice(0, 3)
+  //       .join(", ")
+  //   : "";
   tabsDataOwnership.innerHTML = obj.cms?.ownership || "";
-  tabsDataGameTypes.innerHTML = "";
-  tabsDataLanguages.innerHTML = "";
-  tabsDataRequirements.innerHTML = obj?.requirements || "";
+  tabsDataGameTypes.innerHTML = obj.cms?.game_types.length
+    ? obj.cms?.game_types
+        ?.map(
+          (gameName) =>
+            `<div class="affiliate-programs-list-details-tabs-data-game">${gameName}</div>`
+        )
+        .join(",")
+        .replaceAll(",", "")
+    : "";
+  tabsDataLanguages.innerHTML = obj.cms?.languages.length
+    ? obj.cms?.languages
+        ?.map(
+          (language) =>
+            `<div class="affiliate-programs-list-details-tabs-data-language"><img src="${
+              language?.image ||
+              "http://127.0.0.1/routy-local/wp-content/uploads/2024/09/no-image-svg.svg"
+            }" alt="language data associated flag image" class="affiliate-programs-list-details-tabs-data-flag"><span>${
+              language?.name
+            }</span></div>`
+        )
+        .join(",")
+        .replaceAll(",", "")
+    : "";
+  tabsDataRequirements.innerHTML = obj.cms?.requirements || "";
+  tabsDataRequirements.setAttribute("href", obj.cms?.requirements || "");
   tabsTermsAndConditions.innerHTML = obj.cms?.terms_and_condition_url || "";
+  tabsTermsAndConditions.setAttribute(
+    "href",
+    obj.cms?.terms_and_condition_url || ""
+  );
   tabsDataPhone.innerHTML = obj.cms?.contact_phone_number || "";
   tabsDataPhone.setAttribute(
     "href",
     `tel:${obj.cms?.contact_phone_number ? obj.cms?.contact_phone_number : ""}`
   );
   tabsDataSkype.innerHTML = obj.cms?.contact_skype || "";
-  tabsDataApprovalRate.innerHTML = obj.approvalRate || "";
+  tabsDataApprovalRate.innerHTML = obj.cms?.approval_rate || "";
 }
 
 function sortProgramsByName() {
@@ -1198,11 +1263,22 @@ function sortProgramsByName() {
 function sortPrograms(sortValue) {
   if (sortValue.toLowerCase() === "newest first") {
     filteredPrograms.sort((a, b) => {
-      return b.id - a.id;
+      return (
+        new Date(
+          b?.date_updated ? b?.date_updated : b?.date_created
+        ).getTime() -
+        new Date(a?.date_updated ? a?.date_updated : a?.date_created).getTime()
+      );
     });
   } else {
     filteredPrograms.sort((a, b) => {
-      return a.id - b.id;
+      // return a.id - b.id;
+      return (
+        new Date(
+          a?.date_updated ? a?.date_updated : a?.date_created
+        ).getTime() -
+        new Date(b?.date_updated ? b?.date_updated : b?.date_created).getTime()
+      );
     });
   }
   currentPage = 1;
