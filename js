@@ -659,7 +659,13 @@ async function fetchData() {
           (vertical) => vertical?.verticals_id?.name
         );
 
-        return { ...item, brands: brands, category: category, routy: true };
+        return {
+          ...item,
+          brands: brands,
+          category: category,
+          routySupport:
+            item?.routySupport != undefined ? item?.routySupport : true,
+        };
       }
     );
 
@@ -793,8 +799,8 @@ function renderList() {
       item.innerHTML = `
             <a href="${`/routy-local/elementor-19985/?id=${program.id}`}" class="table-data-contents-row-flex">
                 <div class="affiliate-programs-table-column-1 affiliate-programs-table-body-column-1-styling affiliate-programs-columns-with-image"><img src="${
-                  program.logo
-                    ? program.logo
+                  program.thumbnail
+                    ? program.thumbnail
                     : "http://127.0.0.1/routy-local/wp-content/uploads/2024/09/no-image-svg.svg"
                 }" alt="affiliate program image" class="affiliate-program-logo-image"><div class="affiliate-programs-table-column-one-names-wrapper"><span class="affiliate-programs-table-column-one-program-name">${
         program.name
@@ -815,17 +821,28 @@ function renderList() {
                   program.cms?.commission ? program.cms?.commission : ""
                 }</div>
 <div class="affiliate-programs-table-column-4 affiliate-programs-table-body-column-4-styling">${
-        program.routy
+        program.routySupport
           ? `<img src="https://routy.app/wp-content/uploads/2024/07/tick-logo.svg" alt="blue tick image" class="routy-column-image-tick">`
           : `<img src='https://routy.app/wp-content/uploads/2024/07/cros-logo.svg' alt="purple cross image" class="routy-column-image-cross">`
       }
                 </div>
                 <div class="affiliate-programs-table-column-5 affiliate-programs-table-body-column-5-styling">${
-                  program.category.length > 0
-                    ? program.category[0] + ", ..."
-                    : `${
-                        program.category.length == 1 ? program.category[0] : ""
-                      }`
+                  // program.category.length > 0
+                  //   ? program.category[0] + ", ..."
+                  //   : `${
+                  //       program.category.length == 1 ? program.category[0] : ""
+                  //     }`
+                  program.category.length > 3
+                    ? program.category
+                        .map((category) => `${category}`)
+                        .splice(0, 3)
+                        .join(", ") + ",..."
+                    : program.category
+                    ? program.category
+                        .map((category) => `${category}`)
+                        .splice(0, 3)
+                        .join(", ")
+                    : ""
                 }</div>
                 <div class="affiliate-programs-table-column-6 affiliate-programs-table-body-column-6-styling"><button class="affiliate-programs-table-column-6-join-button ${
                   program.website_url ? "active" : "disable"
@@ -873,9 +890,9 @@ function renderPagination() {
   );
   const totalPages = Math.ceil(filteredPrograms.length / itemsPerPage);
   pagination.innerHTML = "";
-
-  const createButton = (text, page) => {
+  const createButton = (text, page, isDisabled = false) => {
     const button = document.createElement("button");
+
     if (text === "<" || text === ">") {
       const img = document.createElement("img");
       img.src =
@@ -889,57 +906,134 @@ function renderPagination() {
     } else {
       button.innerText = text;
     }
+
     if (page === currentPage) {
       button.className =
         "affiliate-program-table-pagination-page-number affiliate-program-table-pagination-button-active";
     } else {
       button.className = "affiliate-program-table-pagination-page-number";
     }
-    button.addEventListener("click", () => goToPage(page));
+
+    if (isDisabled) {
+      button.disabled = true;
+      button.classList.add("disabled-pagination-button");
+    }
+
+    if (!isDisabled) {
+      button.addEventListener("click", () => goToPage(page));
+    }
     return button;
   };
 
-  pagination.appendChild(createButton("<", currentPage - 1));
+  pagination.appendChild(createButton("<", currentPage - 1, currentPage === 1));
 
   if (totalPages <= 8) {
     for (let i = 1; i <= totalPages; i++) {
       pagination.appendChild(createButton(i, i));
     }
   } else {
-    let startPage = Math.max(1, currentPage - 2);
-    let endPage = Math.min(totalPages, currentPage + 2);
+    pagination.appendChild(createButton(1, 1));
 
-    if (currentPage <= 4) {
-      startPage = 1;
-      endPage = 5;
-    } else if (currentPage + 3 >= totalPages) {
-      startPage = totalPages - 4;
-      endPage = totalPages;
+    if (currentPage > 3) {
+      const ellipsisStart = document.createElement("span");
+      ellipsisStart.innerText = "...";
+      pagination.appendChild(ellipsisStart);
+    }
+    const previousPage = Math.max(1, currentPage - 1);
+    const nextPage = Math.min(totalPages, currentPage + 1);
+
+    if (currentPage > 2) {
+      pagination.appendChild(createButton(previousPage, previousPage));
     }
 
-    for (let i = startPage; i <= endPage; i++) {
-      pagination.appendChild(createButton(i, i));
+    if (currentPage !== 1 && currentPage !== totalPages) {
+      pagination.appendChild(createButton(currentPage, currentPage));
     }
 
-    if (currentPage + 3 < totalPages) {
-      const ellipsis = document.createElement("span");
-      ellipsis.innerText = "...";
-      pagination.appendChild(ellipsis);
-      pagination.appendChild(createButton(totalPages, totalPages));
+    if (currentPage < totalPages - 1) {
+      pagination.appendChild(createButton(nextPage, nextPage));
     }
+
+    if (currentPage < totalPages - 2) {
+      const ellipsisEnd = document.createElement("span");
+      ellipsisEnd.innerText = "...";
+      pagination.appendChild(ellipsisEnd);
+    }
+
+    pagination.appendChild(createButton(totalPages, totalPages));
   }
 
-  pagination.appendChild(createButton(">", currentPage + 1));
+  pagination.appendChild(
+    createButton(">", currentPage + 1, currentPage === totalPages)
+  );
 }
 
-function changePage(direction) {
-  currentPage += direction;
-  if (currentPage < 1) currentPage = 1;
-  if (currentPage > Math.ceil(filteredPrograms.length / itemsPerPage))
-    currentPage = Math.ceil(filteredPrograms.length / itemsPerPage);
-  renderList();
-  renderPagination();
-}
+//   const createButton = (text, page) => {
+//     const button = document.createElement("button");
+//     if (text === "<" || text === ">") {
+//       const img = document.createElement("img");
+//       img.src =
+//         text === "<"
+//           ? "https://routy.app/wp-content/uploads/2024/07/pagination-left-arrow.svg"
+//           : "https://routy.app/wp-content/uploads/2024/07/pagination-right-arrow.svg";
+//       img.alt = text;
+//       img.style.width = "20px";
+//       img.style.height = "20px";
+//       button.appendChild(img);
+//     } else {
+//       button.innerText = text;
+//     }
+//     if (page === currentPage) {
+//       button.className =
+//         "affiliate-program-table-pagination-page-number affiliate-program-table-pagination-button-active";
+//     } else {
+//       button.className = "affiliate-program-table-pagination-page-number";
+//     }
+//     button.addEventListener("click", () => goToPage(page));
+//     return button;
+//   };
+
+//   pagination.appendChild(createButton("<", currentPage - 1));
+
+//   if (totalPages <= 8) {
+//     for (let i = 1; i <= totalPages; i++) {
+//       pagination.appendChild(createButton(i, i));
+//     }
+//   } else {
+//     let startPage = Math.max(1, currentPage - 2);
+//     let endPage = Math.min(totalPages, currentPage + 2);
+
+//     if (currentPage <= 4) {
+//       startPage = 1;
+//       endPage = 5;
+//     } else if (currentPage + 3 >= totalPages) {
+//       startPage = totalPages - 4;
+//       endPage = totalPages;
+//     }
+
+//     for (let i = startPage; i <= endPage; i++) {
+//       pagination.appendChild(createButton(i, i));
+//     }
+
+//     if (currentPage + 3 < totalPages) {
+//       const ellipsis = document.createElement("span");
+//       ellipsis.innerText = "...";
+//       pagination.appendChild(ellipsis);
+//       pagination.appendChild(createButton(totalPages, totalPages));
+//     }
+//   }
+
+//   pagination.appendChild(createButton(">", currentPage + 1));
+// }
+
+// // function changePage(direction) {
+// //   currentPage += direction;
+// //   if (currentPage < 1) currentPage = 1;
+// //   if (currentPage > Math.ceil(filteredPrograms.length / itemsPerPage))
+// //     currentPage = Math.ceil(filteredPrograms.length / itemsPerPage);
+// //   renderList();
+// //   renderPagination();
+// // }
 
 function goToPage(page) {
   if (page < 1) page = 1;
@@ -1036,7 +1130,7 @@ function renderDetailsBannerandtab(obj) {
       ? obj.brands
           .map((brand) => `${brand} `)
           .splice(0, 3)
-          .join(", ") + "..."
+          .join(", ") + ",..."
       : obj.brands
       ? obj.brands
           .map((brand) => `${brand}`)
@@ -1048,7 +1142,18 @@ function renderDetailsBannerandtab(obj) {
     "href",
     `mailto:${obj.cms?.contact_email ? obj.cms?.contact_email : ""}`
   );
-  tabsDataTags.innerHTML = "";
+  tabsDataTags.innerHTML =
+    obj.cms?.tags.length > 3
+      ? obj.cms?.tags
+          .map((tag) => `${tag} `)
+          .splice(0, 3)
+          .join(", ") + ",..."
+      : obj.cms.tags
+      ? obj.cms.tags
+          .map((tag) => `${tag}`)
+          .splice(0, 3)
+          .join(", ")
+      : "";
   tabsDataOwnership.innerHTML = obj.cms?.ownership || "";
   tabsDataGameTypes.innerHTML = "";
   tabsDataLanguages.innerHTML = "";
@@ -1111,11 +1216,11 @@ function searchPrograms(currentArray, searchValue) {
   }
   const searchedPrograms = currentArray.filter(
     (program) =>
-      program.name.toLowerCase().includes(searchValue) ||
+      program.name.toLowerCase().includes(searchValue.trim()) ||
       program?.affiliate_program_software?.name
         .toLowerCase()
-        .includes(searchValue) ||
-      program.cms?.commission?.toLowerCase().includes(searchValue)
+        .includes(searchValue.trim()) ||
+      program.cms?.commission?.toLowerCase().includes(searchValue.trim())
   );
   return searchedPrograms;
 }
@@ -1402,8 +1507,8 @@ function renderRoutySupportFilters() {
       routySupportDiv.addEventListener("click", (e) => {
         appliedFiltersArray.push(
           e.target.innerHTML.toLowerCase() == "yes"
-            ? "RoutySupported"
-            : "NotSupported"
+            ? "Routy Supported"
+            : "Not Supported"
         );
         appliedFiltersClassesArray.push(
           "affiliate-programs-table-selected-routy-support"
@@ -1448,8 +1553,8 @@ function renderRoutySupportFilters() {
             ".affiliate-programs-table-selected-filter"
           ).innerHTML = `<div>${
           e.target.innerHTML.toLowerCase() == "yes"
-            ? "RoutySupported"
-            : "NotSupported"
+            ? "Routy Supported"
+            : "Not Supported"
         }</div> <img src="https://routy.app/wp-content/uploads/2024/07/cross-icon-filter.svg" alt="cross image" class="affiliate-program-table-filter-category-cross-image">`;
         e.target
           .closest(
@@ -1557,7 +1662,8 @@ function searchFiltersUtility(
 ) {
   const searchInputType = document
     .getElementById(searchInputElement)
-    .value.toLowerCase();
+    .value.toLowerCase()
+    .trim();
   if (filterType == "software") {
     let searchFilteredItems = programs.filter((item) =>
       // item[filterType].toLowerCase().includes(searchInputType)
@@ -1571,11 +1677,17 @@ function searchFiltersUtility(
       ),
     ];
   } else {
-    let searchFilteredItems = programs.filter((item) =>
-      item[filterType].toLowerCase().includes(searchInputType)
-    );
+    let searchFilteredItems = programs
+      .filter((item) => item.category.length)
+      .map((item) => item.category)
+      .flat()
+      .filter((item) => item.toLowerCase().includes(searchInputType));
+    // let searchFilteredItems = programs.filter((item) =>
+    //   item[filterType].toLowerCase().includes(searchInputType)
+    // );
     categoryFilters = [
-      ...new Set(searchFilteredItems.map((item) => item[filterType])),
+      // ...new Set(searchFilteredItems.map((item) => item[filterType])),
+      ...new Set(searchFilteredItems.map((item) => item)),
     ];
   }
   renderingFilterArrayFunction();
@@ -1586,7 +1698,7 @@ function searchCategoryFilters() {
     .getElementById("category-search-input-filter-id")
     .value.toLowerCase();
   let searchFilteredCategories = programs.filter((item) =>
-    item.category.toLowerCase().includes(categorySearchInput)
+    item.category.toLowerCase().includes(categorySearchInput.trim())
   );
   categoryFilters = [
     ...new Set(searchFilteredCategories.map((item) => item.name)),
@@ -1597,7 +1709,8 @@ function searchCategoryFilters() {
 function searchRoutySupport() {
   const routySupportSearchInput = document
     .getElementById("routy-support-search-input-filter-id")
-    .value.toLowerCase();
+    .value.toLowerCase()
+    .trim();
   routySupportFiltersSecondary = routySupportFiltersPrimary.filter((item) =>
     item.toLowerCase().includes(routySupportSearchInput)
   );
@@ -1752,7 +1865,7 @@ function applyFilters(currentArray) {
       }
       if (
         filterCategory === "routySupport" &&
-        program?.routy !== appliedFilters[filterCategory]
+        program?.routySupport !== appliedFilters[filterCategory]
       ) {
         return false;
       }
